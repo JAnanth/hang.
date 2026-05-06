@@ -1,0 +1,19 @@
+appId: com.hang.app
+---
+- launchApp
+- assertVisible: "hang."
+- tapOn:
+    testId: "phone-input"
+- inputText: "+14155550100"
+- tapOn:
+    testId: "send-otp-btn"
+- assertVisible: "Enter code"
+- tapOn:
+    testId: "otp-input"
+- inputText: "123456"
+- tapOn:
+    testId: "name-input"
+- inputText: "Test User"
+- tapOn:
+    testId: "verify-btn"
+- assertVisible: "hang."

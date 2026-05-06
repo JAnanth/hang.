@@ -1,0 +1,16 @@
+appId: com.hang.app
+---
+- launchApp
+- assertVisible: "hang."
+- tapOn:
+    testId: "create-fab"
+- assertVisible: "New event"
+- tapOn:
+    testId: "event-title-input"
+- inputText: "Pickup basketball"
+- tapOn: "Floor 3"
+- tapOn:
+    testId: "timing-planned"
+- tapOn:
+    testId: "create-event-submit"
+- assertVisible: "Pickup basketball"

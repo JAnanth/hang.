@@ -1,0 +1,13 @@
+appId: com.hang.app
+---
+- launchApp
+- assertVisible: "hang."
+- tapOn:
+    testId: "feed-list"
+- tapOn:
+    index: 0
+- assertVisible:
+    testId: "rsvp-row"
+- tapOn:
+    testId: "rsvp-going"
+- assertVisible: "Going"
