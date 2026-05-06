@@ -26,7 +26,6 @@ model User {
   rsvps                 Rsvp[]
   comments              EventComment[]
   authSessions          AuthSession[]
-  otpSessions           OtpSession[]
   notificationPrefs     NotificationPreference[]
   connectionsAsA        UserConnection[]     @relation("ConnectionA")
   connectionsAsB        UserConnection[]     @relation("ConnectionB")
