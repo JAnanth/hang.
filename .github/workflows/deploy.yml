@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-api:
+    name: Deploy API to Railway
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @hang/shared build
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Run database migrations
+        run: pnpm --filter @hang/api db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy to Railway
+        run: railway up --service hang-api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  notify-success:
+    name: Notify on success
+    needs: [deploy-api]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Deployment succeeded
+        run: echo "✅ hang. API deployed to Railway successfully."

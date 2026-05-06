@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "hang.",
+    "slug": "hang-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#faf8f4"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hang.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "hang. uses your photo library to set your profile picture.",
+        "NSCameraUsageDescription": "hang. uses your camera to take a profile picture.",
+        "UIBackgroundModes": ["fetch", "remote-notification"]
+      }
+    },
+    "scheme": "hangapp",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#c17f3b",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "../../node_modules/@expo-google-fonts/dm-serif-display/DMSerifDisplay_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/dm-sans/DMSans_300Light.ttf",
+            "../../node_modules/@expo-google-fonts/dm-sans/DMSans_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/dm-sans/DMSans_500Medium.ttf",
+            "../../node_modules/@expo-google-fonts/dm-sans/DMSans_600SemiBold.ttf"
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
