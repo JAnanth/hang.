@@ -4,8 +4,10 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "postinstall": "node scripts/patch-expo-device.js",
     "start": "expo start",
     "ios": "expo run:ios",
+    "android": "expo run:android",
     "build:ios": "eas build --platform ios",
     "test": "jest --watchAll=false",
     "test:watch": "jest --watchAll",
@@ -13,8 +15,8 @@
   },
   "dependencies": {
     "@hang/shared": "workspace:*",
-    "@expo-google-fonts/dm-sans": "~0.2.3",
-    "@expo-google-fonts/dm-serif-display": "~0.2.3",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/dm-serif-display": "^0.4.2",
     "@react-navigation/native": "^6.1.17",
     "@tanstack/react-query": "^5.45.0",
     "axios": "^1.7.2",
@@ -42,6 +44,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.7",
     "@testing-library/react-native": "^12.5.1",
+    "@testing-library/jest-native": "^5.4.3",
     "@types/react": "~18.2.79",
     "@types/react-native": "~0.74.0",
     "babel-jest": "^29.7.0",
@@ -55,7 +58,9 @@
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|nativewind|react-native-css-interop)"
     ],
-    "setupFilesAfterEnv": [],
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
     "moduleNameMapper": {
       "^@hang/shared$": "<rootDir>/../../packages/shared/src/index.ts"
     }
