@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { Avatar } from '../ui/Avatar.js';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing } from '../../constants/typography.js';
+import { Avatar } from '../ui/Avatar';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing } from '../../constants/typography';
 import type { RsvpEntry } from '@hang/shared';
 
 interface AttendeeListProps {

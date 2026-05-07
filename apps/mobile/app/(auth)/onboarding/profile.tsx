@@ -13,11 +13,11 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LightColors, DarkColors } from '../../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../../constants/typography.js';
-import { Avatar } from '../../../components/ui/Avatar.js';
-import { useAuthStore } from '../../../stores/authStore.js';
-import api from '../../../lib/api.js';
+import { LightColors, DarkColors } from '../../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../../constants/typography';
+import { Avatar } from '../../../components/ui/Avatar';
+import { useAuthStore } from '../../../stores/authStore';
+import api from '../../../lib/api';
 
 export default function OnboardingProfileScreen() {
   const scheme = useColorScheme();

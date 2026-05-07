@@ -9,14 +9,14 @@ import {
   Platform,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { BottomSheet } from '../ui/BottomSheet.js';
-import { TimingToggle } from './TimingToggle.js';
-import { GroupMultiSelect } from './GroupMultiSelect.js';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography.js';
-import { useGroups } from '../../hooks/useGroups.js';
-import { useCreateEvent } from '../../hooks/useEvent.js';
-import { useUiStore } from '../../stores/uiStore.js';
+import { BottomSheet } from '../ui/BottomSheet';
+import { TimingToggle } from './TimingToggle';
+import { GroupMultiSelect } from './GroupMultiSelect';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
+import { useGroups } from '../../hooks/useGroups';
+import { useCreateEvent } from '../../hooks/useEvent';
+import { useUiStore } from '../../stores/uiStore';
 import type { EventType } from '@hang/shared';
 
 function SectionLabel({ label, colors }: { label: string; colors: typeof LightColors }) {

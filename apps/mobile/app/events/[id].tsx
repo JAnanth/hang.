@@ -10,14 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography.js';
-import { RsvpRow } from '../../components/event/RsvpRow.js';
-import { AttendeeList } from '../../components/event/AttendeeList.js';
-import { CommentThread } from '../../components/event/CommentThread.js';
-import { TimeVoting } from '../../components/event/TimeVoting.js';
-import { useEvent, useEventRsvps, useRsvp, useEventComments, useAddComment, useVoteOnTime, useConfirmTime } from '../../hooks/useEvent.js';
-import { useAuthStore } from '../../stores/authStore.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
+import { RsvpRow } from '../../components/event/RsvpRow';
+import { AttendeeList } from '../../components/event/AttendeeList';
+import { CommentThread } from '../../components/event/CommentThread';
+import { TimeVoting } from '../../components/event/TimeVoting';
+import { useEvent, useEventRsvps, useRsvp, useEventComments, useAddComment, useVoteOnTime, useConfirmTime } from '../../hooks/useEvent';
+import { useAuthStore } from '../../stores/authStore';
 import type { RsvpStatus } from '@hang/shared';
 
 function formatDetailTime(confirmedTime: string | null, type: string): string {

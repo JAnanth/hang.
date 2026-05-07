@@ -12,9 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography.js';
-import { useVerifyOtp, useSendOtp } from '../../hooks/useAuth.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
+import { useVerifyOtp, useSendOtp } from '../../hooks/useAuth';
 
 export default function VerifyScreen() {
   const scheme = useColorScheme();

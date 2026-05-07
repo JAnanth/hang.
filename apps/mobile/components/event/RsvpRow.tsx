@@ -2,8 +2,8 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useColorScheme } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
 import type { RsvpStatus } from '@hang/shared';
 
 interface RsvpRowProps {

@@ -6,9 +6,9 @@ import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { queryClient } from '../lib/queryClient.js';
-import { useAuthStore } from '../stores/authStore.js';
-import { registerForPushNotifications, savePushTokenToServer, type NotificationData } from '../lib/notifications.js';
+import { queryClient } from '../lib/queryClient';
+import { useAuthStore } from '../stores/authStore';
+import { registerForPushNotifications, savePushTokenToServer, type NotificationData } from '../lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
 

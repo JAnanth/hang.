@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { RsvpRow } from '../../components/event/RsvpRow.js';
+import { RsvpRow } from '../../components/event/RsvpRow';
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),

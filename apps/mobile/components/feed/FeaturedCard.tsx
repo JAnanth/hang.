@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { GoingFaces } from '../ui/GoingFaces.js';
-import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography.js';
-import { LightColors } from '../../constants/colors.js';
+import { GoingFaces } from '../ui/GoingFaces';
+import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography';
+import { LightColors } from '../../constants/colors';
 import type { FeedItem } from '@hang/shared';
 
 function formatEventTime(item: FeedItem): string {

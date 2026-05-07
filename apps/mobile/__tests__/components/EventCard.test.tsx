@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { EventCard } from '../../components/feed/EventCard.js';
+import { EventCard } from '../../components/feed/EventCard';
 import type { FeedItem } from '@hang/shared';
 
 jest.mock('expo-router', () => ({

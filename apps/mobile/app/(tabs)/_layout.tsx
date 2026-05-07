@@ -1,9 +1,9 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useColorScheme, View, Text, StyleSheet } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize } from '../../constants/typography.js';
-import { CreateEventSheet } from '../../components/create/CreateEventSheet.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize } from '../../constants/typography';
+import { CreateEventSheet } from '../../components/create/CreateEventSheet';
 
 function TabIcon({ name, focused, colors }: { name: string; focused: boolean; colors: typeof LightColors }) {
   const icons: Record<string, string> = {

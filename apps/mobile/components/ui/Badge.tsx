@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { FontFamily, FontSize, Radius } from '../../constants/typography.js';
-import { LightColors } from '../../constants/colors.js';
+import { FontFamily, FontSize, Radius } from '../../constants/typography';
+import { LightColors } from '../../constants/colors';
 
 interface BadgeProps {
   label: string;

@@ -3,11 +3,11 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing } from '../../constants/typography.js';
-import { EventCard } from '../../components/feed/EventCard.js';
-import { useAuthStore } from '../../stores/authStore.js';
-import api from '../../lib/api.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing } from '../../constants/typography';
+import { EventCard } from '../../components/feed/EventCard';
+import { useAuthStore } from '../../stores/authStore';
+import api from '../../lib/api';
 import type { EventWithDetails, PaginatedResponse } from '@hang/shared';
 
 export default function EventsScreen() {

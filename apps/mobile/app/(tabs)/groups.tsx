@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography.js';
-import { useGroups } from '../../hooks/useGroups.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography';
+import { useGroups } from '../../hooks/useGroups';
 import type { GroupWithMembership } from '@hang/shared';
 
 function GroupRow({ group }: { group: GroupWithMembership }) {
