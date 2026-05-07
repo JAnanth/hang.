@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
-import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth';
+import prisma from '../lib/prisma';
 import {
   generateInviteCode,
   incrementMemberCount,
@@ -9,7 +9,7 @@ import {
   isGroupAdmin,
   isGroupMember,
   getActiveEventCount,
-} from '../services/groupService.js';
+} from '../services/groupService';
 
 const createGroupSchema = z.object({
   name: z.string().min(1).max(100),

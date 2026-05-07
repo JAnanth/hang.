@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
-import prisma from '../lib/prisma.js';
-import { createEvent, formatEventWithDetails } from '../services/eventService.js';
-import { notifyNewRsvp, notifyTimeConfirmed } from '../services/pushService.js';
-import { scheduleEventReminder, cancelEventReminder } from '../jobs/reminderJob.js';
-import { isGroupMember } from '../services/groupService.js';
+import { authenticate } from '../middleware/auth';
+import prisma from '../lib/prisma';
+import { createEvent, formatEventWithDetails } from '../services/eventService';
+import { notifyNewRsvp, notifyTimeConfirmed } from '../services/pushService';
+import { scheduleEventReminder, cancelEventReminder } from '../jobs/reminderJob';
+import { isGroupMember } from '../services/groupService';
 
 const createEventSchema = z.object({
   title: z.string().min(1).max(200),

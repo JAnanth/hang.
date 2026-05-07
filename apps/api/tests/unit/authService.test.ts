@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateSessionToken, hashToken } from '../../src/services/authService.js';
+import { generateSessionToken, hashToken } from '../../src/services/authService';
 
 describe('authService', () => {
   describe('generateSessionToken', () => {

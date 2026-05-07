@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from 'crypto';
-import prisma from '../lib/prisma.js';
+import prisma from '../lib/prisma';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 

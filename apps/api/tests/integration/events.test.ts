@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import supertest from 'supertest';
-import { buildApp } from '../../src/server.js';
-import { prisma } from './setup.js';
-import { createSession } from '../../src/services/authService.js';
+import { buildApp } from '../../src/server';
+import { prisma } from './setup';
+import { createSession } from '../../src/services/authService';
 import type { FastifyInstance } from 'fastify';
 
 vi.mock('../../src/services/otpService.js', () => ({

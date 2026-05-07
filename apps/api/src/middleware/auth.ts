@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { createHash } from 'crypto';
-import prisma from '../lib/prisma.js';
+import prisma from '../lib/prisma';
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   const authHeader = request.headers.authorization;

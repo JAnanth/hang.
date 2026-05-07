@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import supertest from 'supertest';
-import { buildApp } from '../../src/server.js';
+import { buildApp } from '../../src/server';
 import type { FastifyInstance } from 'fastify';
 
 vi.mock('../../src/services/otpService.js', () => ({
