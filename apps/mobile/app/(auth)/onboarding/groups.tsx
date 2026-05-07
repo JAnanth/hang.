@@ -45,7 +45,7 @@ export default function OnboardingGroupsScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search groups (e.g. "Floor 3", "PKS")"
+          placeholder={'Search groups (e.g. "Floor 3", "PKS")'}
           placeholderTextColor={colors.textTertiary}
           style={[styles.search, { backgroundColor: colors.surfaceAlt, color: colors.textPrimary, borderColor: colors.border }]}
           autoFocus
