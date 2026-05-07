@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius } from '../../../constants/typography.js';
-import { useOfficialGroupSearch, useJoinGroup } from '../../../hooks/useGroups.js';
+import { LightColors, DarkColors } from '../../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius } from '../../../constants/typography';
+import { useOfficialGroupSearch, useJoinGroup } from '../../../hooks/useGroups';
 
 export default function OnboardingGroupsScreen() {
   const scheme = useColorScheme();

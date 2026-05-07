@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Avatar } from './Avatar.js';
-import { FontFamily, FontSize } from '../../constants/typography.js';
+import { Avatar } from './Avatar';
+import { FontFamily, FontSize } from '../../constants/typography';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
+import { LightColors, DarkColors } from '../../constants/colors';
 
 interface GoingFacesProps {
   attendees: Array<{ name: string; avatarUrl?: string | null }>;

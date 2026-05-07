@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api.js';
+import api from '../lib/api';
 import type { EventWithDetails, RsvpStatus, EventComment, CreateEventInput } from '@hang/shared';
 
 export function useEvent(eventId: string) {

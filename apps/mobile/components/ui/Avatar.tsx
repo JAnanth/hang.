@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors, getAvatarColor } from '../../constants/colors.js';
-import { FontFamily, FontSize } from '../../constants/typography.js';
+import { LightColors, DarkColors, getAvatarColor } from '../../constants/colors';
+import { FontFamily, FontSize } from '../../constants/typography';
 
 interface AvatarProps {
   name: string;

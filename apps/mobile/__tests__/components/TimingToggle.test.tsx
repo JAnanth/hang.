@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { TimingToggle } from '../../components/create/TimingToggle.js';
+import { TimingToggle } from '../../components/create/TimingToggle';
 
 describe('TimingToggle', () => {
   it('renders all three timing options', () => {

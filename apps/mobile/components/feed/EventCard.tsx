@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { GoingFaces } from '../ui/GoingFaces.js';
-import { Badge } from '../ui/Badge.js';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography.js';
+import { GoingFaces } from '../ui/GoingFaces';
+import { Badge } from '../ui/Badge';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography';
 import type { FeedItem } from '@hang/shared';
 
 function formatTime(item: FeedItem): string {

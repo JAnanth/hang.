@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography.js';
-import { Avatar } from '../../components/ui/Avatar.js';
-import { useAuthStore } from '../../stores/authStore.js';
-import { useGroups, useUpdateNotificationLevel } from '../../hooks/useGroups.js';
-import { useLogout } from '../../hooks/useAuth.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography';
+import { Avatar } from '../../components/ui/Avatar';
+import { useAuthStore } from '../../stores/authStore';
+import { useGroups, useUpdateNotificationLevel } from '../../hooks/useGroups';
+import { useLogout } from '../../hooks/useAuth';
 import type { NotificationLevel } from '@hang/shared';
 
 function NotifRow({

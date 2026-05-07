@@ -10,16 +10,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing } from '../../constants/typography.js';
-import { FeaturedCard } from '../../components/feed/FeaturedCard.js';
-import { EventCard } from '../../components/feed/EventCard.js';
-import { GroupFilterPills } from '../../components/feed/GroupFilterPills.js';
-import { Avatar } from '../../components/ui/Avatar.js';
-import { useAuthStore } from '../../stores/authStore.js';
-import { useUiStore } from '../../stores/uiStore.js';
-import { useFeed } from '../../hooks/useFeed.js';
-import { useGroups } from '../../hooks/useGroups.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing } from '../../constants/typography';
+import { FeaturedCard } from '../../components/feed/FeaturedCard';
+import { EventCard } from '../../components/feed/EventCard';
+import { GroupFilterPills } from '../../components/feed/GroupFilterPills';
+import { Avatar } from '../../components/ui/Avatar';
+import { useAuthStore } from '../../stores/authStore';
+import { useUiStore } from '../../stores/uiStore';
+import { useFeed } from '../../hooks/useFeed';
+import { useGroups } from '../../hooks/useGroups';
 import type { FeedItem } from '@hang/shared';
 
 export default function FeedScreen() {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api.js';
+import api from '../lib/api';
 import type { FeedItem, PaginatedResponse } from '@hang/shared';
 
 export function useFeed(groupId?: string | null) {

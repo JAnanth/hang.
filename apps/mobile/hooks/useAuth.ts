@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import api from '../lib/api.js';
-import { useAuthStore } from '../stores/authStore.js';
-import { queryClient } from '../lib/queryClient.js';
+import api from '../lib/api';
+import { useAuthStore } from '../stores/authStore';
+import { queryClient } from '../lib/queryClient';
 import type { AuthResponse, SendOtpInput, VerifyOtpInput } from '@hang/shared';
 
 export function useSendOtp() {

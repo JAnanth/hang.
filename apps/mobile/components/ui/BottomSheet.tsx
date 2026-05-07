@@ -11,8 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { Radius } from '../../constants/typography.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { Radius } from '../../constants/typography';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 

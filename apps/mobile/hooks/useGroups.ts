@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api.js';
+import api from '../lib/api';
 import type { GroupWithMembership, CreateGroupInput, NotificationLevel } from '@hang/shared';
 
 export function useGroups() {

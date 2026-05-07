@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { Avatar } from '../../components/ui/Avatar.js';
+import { Avatar } from '../../components/ui/Avatar';
 
 describe('Avatar', () => {
   it('renders initials when no avatarUrl', () => {

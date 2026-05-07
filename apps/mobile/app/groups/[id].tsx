@@ -12,13 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { LightColors, DarkColors } from '../../constants/colors.js';
-import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography.js';
-import { Avatar } from '../../components/ui/Avatar.js';
-import { EventCard } from '../../components/feed/EventCard.js';
-import { useGroup, useLeaveGroup } from '../../hooks/useGroups.js';
-import { useFeed } from '../../hooks/useFeed.js';
-import { useAuthStore } from '../../stores/authStore.js';
+import { LightColors, DarkColors } from '../../constants/colors';
+import { FontFamily, FontSize, Spacing, Radius, Shadow } from '../../constants/typography';
+import { Avatar } from '../../components/ui/Avatar';
+import { EventCard } from '../../components/feed/EventCard';
+import { useGroup, useLeaveGroup } from '../../hooks/useGroups';
+import { useFeed } from '../../hooks/useFeed';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
