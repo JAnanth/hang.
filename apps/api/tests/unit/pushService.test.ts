@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendPushNotification } from '../../src/lib/apns.js';
+import { sendPushNotification } from '../../src/lib/apns';
 
 describe('pushService', () => {
   it('sendPushNotification is a mock in test environment', () => {

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { sendOtp, verifyOtp } from '../services/otpService.js';
-import { createSession, invalidateSession, refreshSession } from '../services/authService.js';
-import { authenticate } from '../middleware/auth.js';
-import prisma from '../lib/prisma.js';
+import { sendOtp, verifyOtp } from '../services/otpService';
+import { createSession, invalidateSession, refreshSession } from '../services/authService';
+import { authenticate } from '../middleware/auth';
+import prisma from '../lib/prisma';
 
 const sendOtpSchema = z.object({
   phone: z.string().regex(/^\+[1-9]\d{1,14}$/, 'Invalid phone number — use E.164 format (e.g. +14155552671)'),

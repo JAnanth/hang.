@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma.js';
-import { scheduleEventReminder } from '../jobs/reminderJob.js';
-import { notifyNewEvent } from './pushService.js';
+import prisma from '../lib/prisma';
+import { scheduleEventReminder } from '../jobs/reminderJob';
+import { notifyNewEvent } from './pushService';
 import type { CreateEventInput, EventWithDetails } from '@hang/shared';
 
 export async function formatEventWithDetails(

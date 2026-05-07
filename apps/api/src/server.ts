@@ -2,13 +2,13 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { authRoutes } from './routes/auth.js';
-import { userRoutes } from './routes/users.js';
-import { groupRoutes } from './routes/groups.js';
-import { eventRoutes } from './routes/events.js';
-import { notificationRoutes } from './routes/notifications.js';
-import { registerRateLimit } from './middleware/rateLimit.js';
-import { startReminderWorker } from './jobs/reminderJob.js';
+import { authRoutes } from './routes/auth';
+import { userRoutes } from './routes/users';
+import { groupRoutes } from './routes/groups';
+import { eventRoutes } from './routes/events';
+import { notificationRoutes } from './routes/notifications';
+import { registerRateLimit } from './middleware/rateLimit';
+import { startReminderWorker } from './jobs/reminderJob';
 
 export async function buildApp() {
   const app = Fastify({

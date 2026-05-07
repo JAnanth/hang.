@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
-import { getRedis } from '../lib/redis.js';
-import { sendEventReminder } from '../services/pushService.js';
+import { getRedis } from '../lib/redis';
+import { sendEventReminder } from '../services/pushService';
 
 const QUEUE_NAME = 'event-reminders';
 

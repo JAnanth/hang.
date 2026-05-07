@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateInviteCode } from '../../src/services/groupService.js';
+import { generateInviteCode } from '../../src/services/groupService';
 
 describe('groupService', () => {
   describe('generateInviteCode', () => {

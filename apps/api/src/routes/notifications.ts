@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
-import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth';
+import prisma from '../lib/prisma';
 
 const updatePrefSchema = z.object({
   level: z.enum(['all', 'mentions', 'off']),

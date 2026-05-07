@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import prisma from '../lib/prisma.js';
+import prisma from '../lib/prisma';
 
 export function generateInviteCode(): string {
   return randomBytes(4).toString('hex').toUpperCase();

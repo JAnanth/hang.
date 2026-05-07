@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma.js';
-import { sendPushNotification } from '../lib/apns.js';
+import prisma from '../lib/prisma';
+import { sendPushNotification } from '../lib/apns';
 
 export async function notifyNewEvent(params: {
   eventId: string;
