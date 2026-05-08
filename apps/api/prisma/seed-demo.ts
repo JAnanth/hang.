@@ -100,14 +100,10 @@ async function main() {
   const tokenHash = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-  await prisma.authSession.upsert({
-    where: { tokenHash },
-    update: { expiresAt },
-    create: {
-      userId: demoUser.id,
-      tokenHash,
-      expiresAt,
-    },
+  // Delete old demo sessions, then create a fresh one
+  await prisma.authSession.deleteMany({ where: { userId: demoUser.id } });
+  await prisma.authSession.create({
+    data: { userId: demoUser.id, tokenHash, expiresAt },
   });
 
   console.log(`  ✓ Demo session token (Bearer): ${rawToken}`);
@@ -133,23 +129,19 @@ async function main() {
   for (const g of GROUPS) {
     const existing = g.orgSlug
       ? await prisma.group.findUnique({ where: { orgSlug: g.orgSlug } })
-      : null;
+      : await prisma.group.findFirst({ where: { name: g.name, type: 'custom' } });
 
-    const group = existing
-      ? existing
-      : await prisma.group.upsert({
-          where: g.orgSlug ? { orgSlug: g.orgSlug } : { id: 'never-matches' },
-          update: {},
-          create: {
-            name: g.name,
-            description: g.description,
-            type: g.type,
-            orgSlug: g.orgSlug,
-            inviteCode: generateInviteCode(),
-            createdBy: demoUser.id,
-            memberCount: 0,
-          },
-        });
+    const group = existing ?? await prisma.group.create({
+      data: {
+        name: g.name,
+        description: g.description,
+        type: g.type,
+        orgSlug: g.orgSlug,
+        inviteCode: generateInviteCode(),
+        createdBy: demoUser.id,
+        memberCount: 0,
+      },
+    });
 
     groupMap[g.key] = { id: group.id, name: group.name };
 
