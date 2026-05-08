@@ -16,6 +16,7 @@
     "db:migrate:dev": "pnpm exec prisma migrate dev",
     "db:generate": "pnpm exec prisma generate",
     "db:seed": "pnpm exec tsx prisma/seed.ts",
+    "db:seed-demo": "pnpm exec tsx prisma/seed-demo.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

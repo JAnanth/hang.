@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.bottomSheet,
     borderTopRightRadius: Radius.bottomSheet,
     paddingBottom: 40,
+    flex: 1,
   },
   handle: {
     width: 36,
