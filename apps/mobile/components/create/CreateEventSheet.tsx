@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Platform,
   Modal,
+  FlatList,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BottomSheet } from '../ui/BottomSheet';
 import { TimingToggle } from './TimingToggle';
 import { GroupMultiSelect } from './GroupMultiSelect';
@@ -21,13 +20,203 @@ import { useCreateEvent } from '../../hooks/useEvent';
 import { useUiStore } from '../../stores/uiStore';
 import type { EventType } from '@hang/shared';
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function makeDefaultDate() {
+  const d = new Date();
+  d.setHours(d.getHours() + 2, 0, 0, 0);
+  return d;
+}
+
+/** Next 14 days starting today */
+function buildDays(): Date[] {
+  const days: Date[] = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    d.setHours(0, 0, 0, 0);
+    days.push(d);
+  }
+  return days;
+}
+
+/** 30-minute slots from 6 AM to 11:30 PM */
+function buildTimeSlots(): { label: string; hour: number; minute: number }[] {
+  const slots = [];
+  for (let h = 6; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      const displayM = m === 0 ? '00' : '30';
+      slots.push({ label: `${displayH}:${displayM} ${ampm}`, hour: h, minute: m });
+    }
+  }
+  return slots;
+}
+
+const DAYS = buildDays();
+const TIME_SLOTS = buildTimeSlots();
+
+function formatDay(d: Date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (d.getTime() === today.getTime()) return 'Today';
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatDate(d: Date) {
+  return formatDay(d);
+}
+
+function formatTime(d: Date) {
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// ─── Picker modal ────────────────────────────────────────────────────────────
+
+type PickerType = 'date' | 'time';
+
+interface PickerModalProps {
+  visible: boolean;
+  type: PickerType;
+  date: Date;
+  onSelectDate: (d: Date) => void;
+  onSelectTime: (hour: number, minute: number) => void;
+  onClose: () => void;
+  colors: typeof LightColors;
+}
+
+function PickerModal({ visible, type, date, onSelectDate, onSelectTime, onClose, colors }: PickerModalProps) {
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
+      <View style={[pickerStyles.card, { backgroundColor: colors.surface }]}>
+        <View style={[pickerStyles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[pickerStyles.headerTitle, { color: colors.textSecondary }]}>
+            {type === 'date' ? 'Pick a day' : 'Pick a time'}
+          </Text>
+          <TouchableOpacity onPress={onClose}>
+            <Text style={[pickerStyles.doneBtn, { color: colors.accent }]}>Done</Text>
+          </TouchableOpacity>
+        </View>
+        {type === 'date' ? (
+          <FlatList
+            data={DAYS}
+            keyExtractor={(d) => d.toISOString()}
+            contentContainerStyle={pickerStyles.listContent}
+            renderItem={({ item: d }) => {
+              const selected =
+                d.getFullYear() === date.getFullYear() &&
+                d.getMonth() === date.getMonth() &&
+                d.getDate() === date.getDate();
+              return (
+                <TouchableOpacity
+                  onPress={() => { onSelectDate(d); onClose(); }}
+                  style={[
+                    pickerStyles.row,
+                    { borderBottomColor: colors.border },
+                    selected && { backgroundColor: colors.surfaceAlt },
+                  ]}
+                >
+                  <Text style={[pickerStyles.rowText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                    {formatDay(d)}
+                  </Text>
+                  {selected && <Text style={{ color: colors.accent }}>✓</Text>}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        ) : (
+          <FlatList
+            data={TIME_SLOTS}
+            keyExtractor={(s) => s.label}
+            contentContainerStyle={pickerStyles.listContent}
+            getItemLayout={(_, i) => ({ length: 48, offset: 48 * i, index: i })}
+            initialScrollIndex={Math.max(
+              0,
+              TIME_SLOTS.findIndex((s) => s.hour === date.getHours() && s.minute === date.getMinutes())
+            )}
+            renderItem={({ item: s }) => {
+              const selected = s.hour === date.getHours() && s.minute === date.getMinutes();
+              return (
+                <TouchableOpacity
+                  onPress={() => { onSelectTime(s.hour, s.minute); onClose(); }}
+                  style={[
+                    pickerStyles.row,
+                    { borderBottomColor: colors.border },
+                    selected && { backgroundColor: colors.surfaceAlt },
+                  ]}
+                >
+                  <Text style={[pickerStyles.rowText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                    {s.label}
+                  </Text>
+                  {selected && <Text style={{ color: colors.accent }}>✓</Text>}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  card: {
+    height: '55%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing['5'],
+    paddingVertical: Spacing['3'],
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontFamily: FontFamily.sansMedium,
+    fontSize: FontSize.base,
+  },
+  doneBtn: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: FontSize.base,
+  },
+  listContent: {
+    paddingBottom: 40,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing['5'],
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    height: 48,
+  },
+  rowText: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.base,
+  },
+});
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
 function SectionLabel({ label, colors }: { label: string; colors: typeof LightColors }) {
   return (
     <Text style={[sheetStyles.sectionLabel, { color: colors.textTertiary }]}>{label}</Text>
   );
 }
 
-type PickerMode = 'date' | 'time' | null;
+// ─── CreateEventSheet ─────────────────────────────────────────────────────────
 
 export function CreateEventSheet() {
   const scheme = useColorScheme();
@@ -42,18 +231,13 @@ export function CreateEventSheet() {
   const [type, setType] = useState<EventType>('planned');
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [date, setDate] = useState(() => {
-    const d = new Date();
-    d.setHours(d.getHours() + 2, 0, 0, 0);
-    return d;
-  });
-  const [timeOptions, setTimeOptions] = useState<string[]>([
+  const [date, setDate] = useState<Date>(makeDefaultDate);
+  const [activePicker, setActivePicker] = useState<PickerType | null>(null);
+
+  const [timeOptions] = useState<string[]>([
     new Date(Date.now() + 3600 * 1000).toISOString(),
     new Date(Date.now() + 7200 * 1000).toISOString(),
   ]);
-
-  // Date/time picker state
-  const [pickerMode, setPickerMode] = useState<PickerMode>(null);
 
   const primaryGroup = groups.find((g) => selectedGroupIds[0] === g.id);
   const canSubmit = title.trim().length > 0 && selectedGroupIds.length > 0 && !isPending;
@@ -64,31 +248,17 @@ export function CreateEventSheet() {
     );
   };
 
-  const handleDateChange = (_event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setPickerMode(null);
-    }
-    if (selected) {
-      if (pickerMode === 'date') {
-        const next = new Date(selected);
-        next.setHours(date.getHours(), date.getMinutes(), 0, 0);
-        setDate(next);
-        // On Android, prompt for time next
-        if (Platform.OS === 'android') {
-          setTimeout(() => setPickerMode('time'), 100);
-        }
-      } else {
-        const next = new Date(date);
-        next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
-        setDate(next);
-        if (Platform.OS === 'android') {
-          setPickerMode(null);
-        }
-      }
-    }
+  const handleSelectDate = (d: Date) => {
+    const next = new Date(d);
+    next.setHours(date.getHours(), date.getMinutes(), 0, 0);
+    setDate(next);
   };
 
-  const closePicker = () => setPickerMode(null);
+  const handleSelectTime = (hour: number, minute: number) => {
+    const next = new Date(date);
+    next.setHours(hour, minute, 0, 0);
+    setDate(next);
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -111,6 +281,7 @@ export function CreateEventSheet() {
         setNote('');
         setType('planned');
         setSelectedGroupIds([]);
+        setDate(makeDefaultDate());
         setErrorMsg(null);
         closeCreateSheet();
       },
@@ -121,45 +292,6 @@ export function CreateEventSheet() {
       },
     });
   };
-
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
-  const formatTime = (d: Date) =>
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-  const iosPicker = pickerMode !== null && Platform.OS === 'ios' ? (
-    <Modal transparent animationType="slide" visible>
-      <TouchableOpacity style={sheetStyles.pickerOverlay} onPress={closePicker} activeOpacity={1}>
-        <View style={[sheetStyles.pickerCard, { backgroundColor: colors.surface }]}>
-          <View style={[sheetStyles.pickerHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={closePicker}>
-              <Text style={[sheetStyles.pickerDone, { color: colors.accent }]}>Done</Text>
-            </TouchableOpacity>
-          </View>
-          <DateTimePicker
-            value={date}
-            mode={pickerMode}
-            display="spinner"
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-            textColor={colors.textPrimary}
-            style={{ height: 200 }}
-          />
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  ) : null;
-
-  const androidPicker = pickerMode !== null && Platform.OS === 'android' ? (
-    <DateTimePicker
-      value={date}
-      mode={pickerMode}
-      display="default"
-      onChange={handleDateChange}
-      minimumDate={new Date()}
-    />
-  ) : null;
 
   return (
     <>
@@ -173,7 +305,7 @@ export function CreateEventSheet() {
           <Text style={[sheetStyles.heading, { color: colors.textPrimary }]}>New event</Text>
 
           {errorMsg && (
-            <View style={[sheetStyles.errorBox, { backgroundColor: '#fef2f2', borderColor: '#fca5a5' }]}>
+            <View style={sheetStyles.errorBox}>
               <Text style={sheetStyles.errorText}>{errorMsg}</Text>
             </View>
           )}
@@ -210,7 +342,7 @@ export function CreateEventSheet() {
           {type === 'planned' && (
             <View style={sheetStyles.timeRow}>
               <TouchableOpacity
-                onPress={() => setPickerMode('date')}
+                onPress={() => setActivePicker('date')}
                 style={[sheetStyles.timeChip, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
               >
                 <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>
@@ -218,7 +350,7 @@ export function CreateEventSheet() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setPickerMode('time')}
+                onPress={() => setActivePicker('time')}
                 style={[sheetStyles.timeChip, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
               >
                 <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>
@@ -248,9 +380,7 @@ export function CreateEventSheet() {
             disabled={!canSubmit}
             style={[
               sheetStyles.submitBtn,
-              {
-                backgroundColor: canSubmit ? colors.textPrimary : colors.border,
-              },
+              { backgroundColor: canSubmit ? colors.textPrimary : colors.border },
             ]}
           >
             <Text style={[sheetStyles.submitText, { color: canSubmit ? colors.background : colors.textTertiary }]}>
@@ -264,16 +394,23 @@ export function CreateEventSheet() {
         </View>
       </BottomSheet>
 
-      {iosPicker}
-      {androidPicker}
+      <PickerModal
+        visible={activePicker !== null}
+        type={activePicker ?? 'date'}
+        date={date}
+        onSelectDate={handleSelectDate}
+        onSelectTime={handleSelectTime}
+        onClose={() => setActivePicker(null)}
+        colors={colors}
+      />
     </>
   );
 }
 
+// ─── Sheet styles ─────────────────────────────────────────────────────────────
+
 const sheetStyles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
   content: {
     paddingHorizontal: Spacing['5'],
     paddingBottom: Spacing['4'],
@@ -323,6 +460,8 @@ const sheetStyles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingHorizontal: Spacing['4'],
     paddingVertical: Spacing['3'],
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
   },
   errorText: {
     fontFamily: FontFamily.sans,
@@ -342,26 +481,5 @@ const sheetStyles = StyleSheet.create({
   submitText: {
     fontFamily: FontFamily.sansSemiBold,
     fontSize: FontSize.md,
-  },
-  pickerOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  pickerCard: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: Spacing['5'],
-    paddingVertical: Spacing['3'],
-    borderBottomWidth: 1,
-  },
-  pickerDone: {
-    fontFamily: FontFamily.sansSemiBold,
-    fontSize: FontSize.base,
   },
 });
