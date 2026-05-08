@@ -92,7 +92,9 @@ export async function createEvent(
   });
 
   if (event.confirmedTime) {
-    await scheduleEventReminder(event.id, event.confirmedTime);
+    await scheduleEventReminder(event.id, event.confirmedTime).catch((err) =>
+      console.error('Failed to schedule reminder:', err)
+    );
   }
 
   const creator = await prisma.user.findUnique({

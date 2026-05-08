@@ -177,7 +177,9 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
 
       if (confirmedTime) {
         await cancelEventReminder(id).catch(() => null);
-        await scheduleEventReminder(id, new Date(confirmedTime));
+        await scheduleEventReminder(id, new Date(confirmedTime)).catch((err) =>
+          console.error('Failed to schedule reminder:', err)
+        );
       }
 
       const formatted = await formatEventWithDetails(id, request.user.id);
@@ -488,7 +490,9 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
         },
       });
 
-      await scheduleEventReminder(id, option.proposedTime);
+      await scheduleEventReminder(id, option.proposedTime).catch((err) =>
+        console.error('Failed to schedule reminder:', err)
+      );
 
       const groupName = event.eventGroups[0]?.group.name ?? 'group';
       await notifyTimeConfirmed({
