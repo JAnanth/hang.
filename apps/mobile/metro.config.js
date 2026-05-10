@@ -10,16 +10,13 @@ const config = getDefaultConfig(projectRoot);
 // Watch the entire monorepo so Metro sees workspace packages
 config.watchFolders = [workspaceRoot];
 
-// Resolve modules from both the app's node_modules and the pnpm virtual store
+// Resolve modules from monorepo root node_modules first (hoisted by pnpm)
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules/.pnpm/node_modules'),
 ];
 
-// Required for pnpm: follow symlinks into the virtual store so Metro
-// can find packages that are not hoisted to the workspace root.
-config.resolver.unstable_enableSymlinks = true;
+// Prevent Metro from following pnpm symlinks into the virtual store
 config.resolver.disableHierarchicalLookup = false;
 
 module.exports = withNativeWind(config, { input: './global.css' });
