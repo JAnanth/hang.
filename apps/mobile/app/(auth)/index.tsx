@@ -16,23 +16,40 @@ import { LightColors, DarkColors } from '../../constants/colors';
 import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
 import { useSendOtp } from '../../hooks/useAuth';
 
+// Formats raw digit string (up to 10 digits) → "(949) 300-2274"
+function formatPhoneDisplay(digits: string): string {
+  const d = digits.slice(0, 10);
+  if (d.length === 0) return '';
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 export default function PhoneEntryScreen() {
   const scheme = useColorScheme();
   const colors = scheme === 'dark' ? DarkColors : LightColors;
   const router = useRouter();
-  const [phone, setPhone] = useState('');
   const { mutate: sendOtp, isPending, error } = useSendOtp();
 
-  const formatted = phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`;
-  const isValid = /^\+[1-9]\d{8,14}$/.test(formatted);
+  // Store only raw digits; display formatted version
+  const [digits, setDigits] = useState('');
+  const displayValue = formatPhoneDisplay(digits);
+  const e164 = `+1${digits}`;
+  const isValid = digits.length === 10;
+
+  const handleChangeText = (text: string) => {
+    // Strip everything except digits and cap at 10
+    const raw = text.replace(/\D/g, '').slice(0, 10);
+    setDigits(raw);
+  };
 
   const handleSubmit = () => {
     if (!isValid) return;
     sendOtp(
-      { phone: formatted },
+      { phone: e164 },
       {
         onSuccess: () => {
-          router.push({ pathname: '/(auth)/verify', params: { phone: formatted } });
+          router.push({ pathname: '/(auth)/verify', params: { phone: e164 } });
         },
       }
     );
@@ -53,21 +70,23 @@ export default function PhoneEntryScreen() {
 
         <View style={styles.form}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>YOUR PHONE NUMBER</Text>
-          <TextInput
-            testID="phone-input"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+1 (415) 555-0100"
-            placeholderTextColor={colors.textTertiary}
-            keyboardType="phone-pad"
-            style={[
-              styles.input,
-              { backgroundColor: colors.surfaceAlt, color: colors.textPrimary, borderColor: colors.border },
-            ]}
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-          />
+
+          <View style={[styles.inputRow, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+            <Text style={[styles.countryCode, { color: colors.textSecondary }]}>🇺🇸 +1</Text>
+            <TextInput
+              testID="phone-input"
+              value={displayValue}
+              onChangeText={handleChangeText}
+              placeholder="(949) 000-0000"
+              placeholderTextColor={colors.textTertiary}
+              keyboardType="number-pad"
+              style={[styles.input, { color: colors.textPrimary }]}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              maxLength={14} // formatted length: (XXX) XXX-XXXX
+            />
+          </View>
 
           {error && (
             <Text style={[styles.errorText, { color: colors.error }]}>
@@ -122,13 +141,24 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     letterSpacing: 0.8,
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: Radius.md,
+    borderWidth: 1,
     paddingHorizontal: Spacing['4'],
+  },
+  countryCode: {
+    fontFamily: FontFamily.sansMedium,
+    fontSize: FontSize.md,
+    marginRight: Spacing['2'],
     paddingVertical: Spacing['4'],
+  },
+  input: {
+    flex: 1,
     fontFamily: FontFamily.sans,
     fontSize: FontSize.md,
-    borderWidth: 1,
+    paddingVertical: Spacing['4'],
   },
   errorText: {
     fontFamily: FontFamily.sans,

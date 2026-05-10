@@ -19,6 +19,7 @@ function getTwilioClient() {
 
 // Phones in this set skip Twilio and accept code "000000" (dev/demo use only).
 const DEV_PHONES = new Set([
+  '+19493002274', // Jay Ananth — demo account
   '+15550000001',
   '+15550000002',
   '+15550000003',

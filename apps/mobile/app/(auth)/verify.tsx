@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -22,20 +22,19 @@ export default function VerifyScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const router = useRouter();
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
   const { mutate: verifyOtp, isPending, error } = useVerifyOtp();
   const { mutate: resendOtp, isPending: isResending } = useSendOtp();
 
   const handleVerify = () => {
     if (code.length !== 6) return;
-    verifyOtp({ phone: phone ?? '', code, name: name.trim() || undefined });
+    verifyOtp({ phone: phone ?? '', code });
   };
 
   const handleCodeChange = (text: string) => {
     const cleaned = text.replace(/\D/g, '').slice(0, 6);
     setCode(cleaned);
     if (cleaned.length === 6) {
-      verifyOtp({ phone: phone ?? '', code: cleaned, name: name.trim() || undefined });
+      verifyOtp({ phone: phone ?? '', code: cleaned });
     }
   };
 
@@ -75,20 +74,6 @@ export default function VerifyScreen() {
             ]}
             autoFocus
             textContentType="oneTimeCode"
-          />
-
-          <TextInput
-            testID="name-input"
-            value={name}
-            onChangeText={setName}
-            placeholder="Your name (for new accounts)"
-            placeholderTextColor={colors.textTertiary}
-            style={[
-              styles.nameInput,
-              { backgroundColor: colors.surfaceAlt, color: colors.textPrimary, borderColor: colors.border },
-            ]}
-            returnKeyType="done"
-            onSubmitEditing={handleVerify}
           />
 
           {error && (
@@ -154,14 +139,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     letterSpacing: 8,
     textAlign: 'center',
-    borderWidth: 1,
-  },
-  nameInput: {
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing['4'],
-    paddingVertical: Spacing['4'],
-    fontFamily: FontFamily.sans,
-    fontSize: FontSize.base,
     borderWidth: 1,
   },
   errorText: { fontFamily: FontFamily.sans, fontSize: FontSize.sm },
