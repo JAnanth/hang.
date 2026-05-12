@@ -83,7 +83,7 @@ export default function EventDetailScreen() {
   }
 
   const isCreator = event.createdBy === user?.id;
-  const isActive = event.status === 'active';
+  const isActive = event.status === 'active' || event.status === 'confirmed';
   const timeLabel = formatDetailTime(event.confirmedTime, event.type);
   const [timeLine1, timeLine2] = timeLabel.split('\n');
 
