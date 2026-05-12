@@ -102,6 +102,37 @@ export function useCreateEvent() {
   });
 }
 
+export function useEndEvent(eventId: string) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (note?: string) =>
+      api.patch(`/events/${eventId}`, { status: 'ended' }).then(async () => {
+        if (note?.trim()) {
+          await api.post(`/events/${eventId}/comments`, { body: note.trim() });
+        }
+      }),
+
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['event', eventId] });
+      qc.invalidateQueries({ queryKey: ['feed'] });
+    },
+  });
+}
+
+export function useAddTimeOption(eventId: string) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (proposedTime: string) =>
+      api.post(`/events/${eventId}/time-options`, { proposedTime }),
+
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['event', eventId] });
+    },
+  });
+}
+
 export function useVoteOnTime(eventId: string) {
   const qc = useQueryClient();
 
