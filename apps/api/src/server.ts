@@ -8,7 +8,7 @@ import { groupRoutes } from './routes/groups';
 import { eventRoutes } from './routes/events';
 import { notificationRoutes } from './routes/notifications';
 import { registerRateLimit } from './middleware/rateLimit';
-import { startReminderWorker } from './jobs/reminderJob';
+import { startReminderWorker, startAutoCloseWorker } from './jobs/reminderJob';
 
 export async function buildApp() {
   const app = Fastify({
@@ -56,6 +56,7 @@ async function start() {
 
   if (process.env.NODE_ENV !== 'test') {
     startReminderWorker();
+    startAutoCloseWorker();
   }
 
   await app.listen({ port, host: '0.0.0.0' });

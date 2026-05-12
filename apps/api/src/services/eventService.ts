@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { scheduleEventReminder } from '../jobs/reminderJob';
+import { scheduleEventReminder, scheduleEventAutoClose } from '../jobs/reminderJob';
 import { notifyNewEvent } from './pushService';
 import type { CreateEventInput, EventWithDetails } from '@hang/shared';
 
@@ -94,6 +94,9 @@ export async function createEvent(
   if (event.confirmedTime) {
     await scheduleEventReminder(event.id, event.confirmedTime).catch((err) =>
       console.error('Failed to schedule reminder:', err)
+    );
+    await scheduleEventAutoClose(event.id, event.confirmedTime).catch((err) =>
+      console.error('Failed to schedule auto-close:', err)
     );
   }
 
