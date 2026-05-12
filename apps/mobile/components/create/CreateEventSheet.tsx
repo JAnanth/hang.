@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
-  FlatList,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { BottomSheet } from '../ui/BottomSheet';
@@ -21,9 +20,9 @@ import { useCreateEvent } from '../../hooks/useEvent';
 import { useUiStore } from '../../stores/uiStore';
 import type { EventType } from '@hang/shared';
 
-// ─── Time picker modal (reused for planned date/time and voting slot picks) ──
+// ─── Compact date+time picker ─────────────────────────────────────────────────
 
-const DAYS = (() => {
+const PICKER_DAYS = (() => {
   const days: Date[] = [];
   for (let i = 0; i < 14; i++) {
     const d = new Date();
@@ -34,24 +33,256 @@ const DAYS = (() => {
   return days;
 })();
 
-const TIME_SLOTS = (() => {
-  const slots: { label: string; hour: number; minute: number }[] = [];
-  for (let h = 6; h < 24; h++) {
-    for (const m of [0, 30]) {
-      const ampm = h < 12 ? 'AM' : 'PM';
-      const dh = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      slots.push({ label: `${dh}:${m === 0 ? '00' : '30'} ${ampm}`, hour: h, minute: m });
-    }
-  }
-  return slots;
-})();
+const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const MINUTES = [0, 15, 30, 45];
 
-function formatDay(d: Date) {
+function dayChipLabel(d: Date): { top: string; bottom: string } {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const tom = new Date(today); tom.setDate(tom.getDate() + 1);
-  if (d.getTime() === today.getTime()) return 'Today';
-  if (d.getTime() === tom.getTime()) return 'Tomorrow';
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return { top: 'Today', bottom: '' };
+  if (diff === 1) return { top: 'Tomorrow', bottom: '' };
+  return {
+    top: d.toLocaleDateString('en-US', { weekday: 'short' }),
+    bottom: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  };
+}
+
+function buildIso(day: Date, hour: number, minute: number, ampm: 'AM' | 'PM'): string {
+  const d = new Date(day);
+  let h = hour % 12;
+  if (ampm === 'PM') h += 12;
+  d.setHours(h, minute, 0, 0);
+  return d.toISOString();
+}
+
+interface CompactTimePickerProps {
+  initialDate?: Date;
+  title: string;
+  onSelect: (iso: string) => void;
+  onCancel: () => void;
+  colors: typeof LightColors;
+}
+
+function CompactTimePicker({ initialDate, title, onSelect, onCancel, colors }: CompactTimePickerProps) {
+  const init = initialDate ?? (() => { const d = new Date(); d.setHours(18, 0, 0, 0); return d; })();
+  const initHour = init.getHours() % 12 || 12;
+  const initAmpm: 'AM' | 'PM' = init.getHours() < 12 ? 'AM' : 'PM';
+  const initMinute = Math.round(init.getMinutes() / 15) * 15 % 60;
+
+  const [selDay, setSelDay] = useState<Date>(
+    PICKER_DAYS.find((d) => d.toDateString() === init.toDateString()) ?? PICKER_DAYS[0]
+  );
+  const [selHour, setSelHour] = useState(initHour);
+  const [selMinute, setSelMinute] = useState(initMinute);
+  const [ampm, setAmpm] = useState<'AM' | 'PM'>(initAmpm);
+
+  const previewIso = buildIso(selDay, selHour, selMinute, ampm);
+  const isInFuture = new Date(previewIso) > new Date();
+
+  return (
+    <View style={[pickerStyles.sheet, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[pickerStyles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={onCancel}>
+          <Text style={[pickerStyles.action, { color: colors.textSecondary }]}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={[pickerStyles.title, { color: colors.textPrimary }]}>{title}</Text>
+        <TouchableOpacity onPress={() => isInFuture && onSelect(previewIso)} disabled={!isInFuture}>
+          <Text style={[pickerStyles.action, pickerStyles.actionBold, { color: isInFuture ? colors.accent : colors.border }]}>
+            Done
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Date row */}
+      <Text style={[pickerStyles.sectionLabel, { color: colors.textSecondary }]}>DATE</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={pickerStyles.dayRow}>
+        {PICKER_DAYS.map((d) => {
+          const label = dayChipLabel(d);
+          const selected = d.toDateString() === selDay.toDateString();
+          return (
+            <TouchableOpacity
+              key={d.toISOString()}
+              onPress={() => setSelDay(d)}
+              style={[
+                pickerStyles.dayChip,
+                { borderColor: selected ? colors.accent : colors.border },
+                selected && { backgroundColor: `${colors.accent}18` },
+              ]}
+            >
+              <Text style={[pickerStyles.dayTop, { color: selected ? colors.accent : colors.textPrimary }]}>
+                {label.top}
+              </Text>
+              {label.bottom ? (
+                <Text style={[pickerStyles.dayBottom, { color: selected ? colors.accent : colors.textSecondary }]}>
+                  {label.bottom}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Hour grid */}
+      <Text style={[pickerStyles.sectionLabel, { color: colors.textSecondary }]}>HOUR</Text>
+      <View style={pickerStyles.hourGrid}>
+        {HOURS.map((h) => {
+          const selected = h === selHour;
+          return (
+            <TouchableOpacity
+              key={h}
+              onPress={() => setSelHour(h)}
+              style={[
+                pickerStyles.hourCell,
+                { borderColor: selected ? colors.accent : colors.border },
+                selected && { backgroundColor: `${colors.accent}18` },
+              ]}
+            >
+              <Text style={[pickerStyles.hourText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                {h}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Minute + AM/PM */}
+      <View style={pickerStyles.minuteRow}>
+        <View style={pickerStyles.minuteGroup}>
+          {MINUTES.map((m) => {
+            const selected = m === selMinute;
+            return (
+              <TouchableOpacity
+                key={m}
+                onPress={() => setSelMinute(m)}
+                style={[
+                  pickerStyles.minuteChip,
+                  { borderColor: selected ? colors.accent : colors.border },
+                  selected && { backgroundColor: `${colors.accent}18` },
+                ]}
+              >
+                <Text style={[pickerStyles.minuteText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                  :{String(m).padStart(2, '0')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={[pickerStyles.ampmToggle, { borderColor: colors.border }]}>
+          {(['AM', 'PM'] as const).map((a) => (
+            <TouchableOpacity
+              key={a}
+              onPress={() => setAmpm(a)}
+              style={[pickerStyles.ampmBtn, ampm === a && { backgroundColor: colors.accent }]}
+            >
+              <Text style={[pickerStyles.ampmText, { color: ampm === a ? '#fff' : colors.textSecondary }]}>
+                {a}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Preview */}
+      {isInFuture && (
+        <Text style={[pickerStyles.preview, { color: colors.textSecondary }]}>
+          {new Date(previewIso).toLocaleString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit',
+          })}
+        </Text>
+      )}
+      {!isInFuture && (
+        <Text style={[pickerStyles.preview, { color: colors.error ?? '#c0392b' }]}>
+          Please choose a future time
+        </Text>
+      )}
+    </View>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 36,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing['5'],
+    paddingVertical: Spacing['4'],
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  title: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
+  action: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
+  actionBold: { fontFamily: FontFamily.sansSemiBold },
+  sectionLabel: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: FontSize.xs,
+    letterSpacing: 0.8,
+    marginTop: Spacing['4'],
+    marginBottom: Spacing['2'],
+    paddingHorizontal: Spacing['5'],
+  },
+  dayRow: { paddingHorizontal: Spacing['5'], gap: Spacing['2'] },
+  dayChip: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['3'],
+    paddingVertical: Spacing['2'],
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  dayTop: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.sm },
+  dayBottom: { fontFamily: FontFamily.sans, fontSize: FontSize.xs, marginTop: 2 },
+  hourGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing['5'],
+    gap: Spacing['2'],
+  },
+  hourCell: {
+    width: '21%',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing['2'],
+    alignItems: 'center',
+  },
+  hourText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
+  minuteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing['5'],
+    marginTop: Spacing['4'],
+    gap: Spacing['3'],
+  },
+  minuteGroup: { flexDirection: 'row', gap: Spacing['2'] },
+  minuteChip: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['3'],
+    paddingVertical: Spacing['2'],
+  },
+  minuteText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
+  ampmToggle: { flexDirection: 'row', borderWidth: 1, borderRadius: Radius.md, overflow: 'hidden' },
+  ampmBtn: { paddingHorizontal: Spacing['4'], paddingVertical: Spacing['2'] },
+  ampmText: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
+  preview: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.sm,
+    textAlign: 'center',
+    marginTop: Spacing['4'],
+    paddingHorizontal: Spacing['5'],
+  },
+});
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
+function SectionLabel({ label, colors }: { label: string; colors: typeof LightColors }) {
+  return <Text style={[sheetStyles.sectionLabel, { color: colors.textTertiary }]}>{label}</Text>;
 }
 
 function formatDateLabel(d: Date) {
@@ -60,96 +291,6 @@ function formatDateLabel(d: Date) {
 
 function formatTimeLabel(d: Date) {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
-
-function makeDefaultDate() {
-  const d = new Date(); d.setHours(d.getHours() + 2, 0, 0, 0); return d;
-}
-
-type PickerStep = 'date' | 'time' | null;
-
-interface PickerModalProps {
-  visible: boolean;
-  step: PickerStep;
-  date: Date;
-  onSelectDate: (d: Date) => void;
-  onSelectTime: (h: number, m: number) => void;
-  onClose: () => void;
-  colors: typeof LightColors;
-}
-
-function TimePickerModal({ visible, step, date, onSelectDate, onSelectTime, onClose, colors }: PickerModalProps) {
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
-      <View style={[pickerStyles.card, { backgroundColor: colors.surface }]}>
-        <View style={[pickerStyles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[pickerStyles.title, { color: colors.textSecondary }]}>
-            {step === 'date' ? 'Pick a day' : 'Pick a time'}
-          </Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={[pickerStyles.done, { color: colors.accent }]}>Done</Text>
-          </TouchableOpacity>
-        </View>
-        {step === 'date' ? (
-          <FlatList
-            data={DAYS}
-            keyExtractor={(d) => d.toISOString()}
-            contentContainerStyle={pickerStyles.listContent}
-            renderItem={({ item: d }) => {
-              const sel = d.getFullYear() === date.getFullYear() && d.getMonth() === date.getMonth() && d.getDate() === date.getDate();
-              return (
-                <TouchableOpacity
-                  onPress={() => onSelectDate(d)}
-                  style={[pickerStyles.row, { borderBottomColor: colors.border }, sel && { backgroundColor: colors.surfaceAlt }]}
-                >
-                  <Text style={[pickerStyles.rowText, { color: sel ? colors.accent : colors.textPrimary }]}>{formatDay(d)}</Text>
-                  {sel && <Text style={{ color: colors.accent }}>✓</Text>}
-                </TouchableOpacity>
-              );
-            }}
-          />
-        ) : (
-          <FlatList
-            data={TIME_SLOTS}
-            keyExtractor={(s) => s.label}
-            contentContainerStyle={pickerStyles.listContent}
-            getItemLayout={(_, i) => ({ length: 48, offset: 48 * i, index: i })}
-            initialScrollIndex={Math.max(0, TIME_SLOTS.findIndex((s) => s.hour === date.getHours() && s.minute === date.getMinutes()))}
-            renderItem={({ item: s }) => {
-              const sel = s.hour === date.getHours() && s.minute === date.getMinutes();
-              return (
-                <TouchableOpacity
-                  onPress={() => onSelectTime(s.hour, s.minute)}
-                  style={[pickerStyles.row, { borderBottomColor: colors.border }, sel && { backgroundColor: colors.surfaceAlt }]}
-                >
-                  <Text style={[pickerStyles.rowText, { color: sel ? colors.accent : colors.textPrimary }]}>{s.label}</Text>
-                  {sel && <Text style={{ color: colors.accent }}>✓</Text>}
-                </TouchableOpacity>
-              );
-            }}
-          />
-        )}
-      </View>
-    </Modal>
-  );
-}
-
-const pickerStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  card: { height: '55%', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing['5'], paddingVertical: Spacing['3'], borderBottomWidth: 1 },
-  title: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
-  done: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
-  listContent: { paddingBottom: 40 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing['5'], paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, height: 48 },
-  rowText: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
-});
-
-// ─── Section label ────────────────────────────────────────────────────────────
-
-function SectionLabel({ label, colors }: { label: string; colors: typeof LightColors }) {
-  return <Text style={[sheetStyles.sectionLabel, { color: colors.textTertiary }]}>{label}</Text>;
 }
 
 // ─── CreateEventSheet ─────────────────────────────────────────────────────────
@@ -169,21 +310,20 @@ export function CreateEventSheet() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Planned timing
-  const [plannedDate, setPlannedDate] = useState<Date>(makeDefaultDate);
-  const [pickerStep, setPickerStep] = useState<PickerStep>(null);
-  const [pickerTarget, setPickerTarget] = useState<'planned' | number>('planned');
+  const [plannedDate, setPlannedDate] = useState<Date>(() => {
+    const d = new Date(); d.setHours(d.getHours() + 2, 0, 0, 0); return d;
+  });
 
-  // Voting timing — array of Date objects (no auto-populate)
+  // Voting timing
   const [voteSlots, setVoteSlots] = useState<Date[]>([]);
-  // Slot being edited in the picker (-1 = new)
-  const [editingSlot, setEditingSlot] = useState<number>(-1);
-  const [slotDraft, setSlotDraft] = useState<Date>(makeDefaultDate);
+
+  // Picker state — null = closed, 'planned' = editing plannedDate, number = editing slot index, -1 = new slot
+  const [pickerTarget, setPickerTarget] = useState<'planned' | number | null>(null);
 
   const selectedGroups = groups.filter((g) => selectedGroupIds.includes(g.id));
   const primaryGroup = selectedGroups[0];
   const totalInvited = selectedGroups.reduce((sum, g) => sum + g.memberCount, 0);
 
-  // Voting requires ≥ 2 slots
   const canSubmit =
     title.trim().length > 0 &&
     selectedGroupIds.length > 0 &&
@@ -196,57 +336,17 @@ export function CreateEventSheet() {
     );
   };
 
-  // ── Planned pickers ──
-  const openPlannedDate = () => { setPickerTarget('planned'); setPickerStep('date'); };
-  const openPlannedTime = () => { setPickerTarget('planned'); setPickerStep('time'); };
-
-  // ── Vote slot pickers ──
-  const openNewSlot = () => {
-    setSlotDraft(makeDefaultDate());
-    setEditingSlot(-1);
-    setPickerTarget('planned'); // reuse flow but for slotDraft
-    setPickerStep('date');
-  };
-
-  const handlePickerDate = (d: Date) => {
+  function handlePickerSelect(iso: string) {
+    const d = new Date(iso);
     if (pickerTarget === 'planned') {
-      const next = new Date(d);
-      next.setHours(plannedDate.getHours(), plannedDate.getMinutes(), 0, 0);
-      setPlannedDate(next);
-      setPickerStep('time');
-    } else {
-      const next = new Date(d);
-      next.setHours(slotDraft.getHours(), slotDraft.getMinutes(), 0, 0);
-      setSlotDraft(next);
-      setPickerStep('time');
+      setPlannedDate(d);
+    } else if (pickerTarget === -1) {
+      setVoteSlots((prev) => [...prev, d]);
+    } else if (typeof pickerTarget === 'number') {
+      setVoteSlots((prev) => prev.map((s, i) => (i === pickerTarget ? d : s)));
     }
-  };
-
-  const handlePickerTime = (h: number, m: number) => {
-    if (pickerTarget === 'planned') {
-      const next = new Date(plannedDate);
-      next.setHours(h, m, 0, 0);
-      setPlannedDate(next);
-    } else {
-      const next = new Date(slotDraft);
-      next.setHours(h, m, 0, 0);
-      // Commit the slot
-      if (editingSlot === -1) {
-        setVoteSlots((prev) => [...prev, next]);
-      } else {
-        setVoteSlots((prev) => prev.map((s, i) => (i === editingSlot ? next : s)));
-      }
-      setSlotDraft(next);
-    }
-    setPickerStep(null);
-  };
-
-  const editVoteSlot = (index: number) => {
-    setSlotDraft(voteSlots[index]);
-    setEditingSlot(index);
-    setPickerTarget(index);
-    setPickerStep('date');
-  };
+    setPickerTarget(null);
+  }
 
   const removeVoteSlot = (index: number) => {
     setVoteSlots((prev) => prev.filter((_, i) => i !== index));
@@ -269,8 +369,9 @@ export function CreateEventSheet() {
     createEvent(payload, {
       onSuccess: () => {
         setTitle(''); setLocation(''); setNote(''); setType('planned');
-        setSelectedGroupIds([]); setPlannedDate(makeDefaultDate()); setVoteSlots([]);
-        setErrorMsg(null);
+        setSelectedGroupIds([]); setVoteSlots([]); setErrorMsg(null);
+        const d = new Date(); d.setHours(d.getHours() + 2, 0, 0, 0);
+        setPlannedDate(d);
         closeCreateSheet();
       },
       onError: (err: unknown) => {
@@ -279,14 +380,29 @@ export function CreateEventSheet() {
     });
   };
 
-  // Whether the picker applies to planned vs vote slot
-  const isSlotPicker = pickerTarget !== 'planned';
-  const pickerDate = isSlotPicker ? slotDraft : plannedDate;
+  const pickerInitialDate =
+    pickerTarget === 'planned'
+      ? plannedDate
+      : typeof pickerTarget === 'number' && pickerTarget >= 0
+      ? voteSlots[pickerTarget]
+      : undefined;
+
+  const pickerTitle =
+    pickerTarget === 'planned'
+      ? 'Set date & time'
+      : pickerTarget === -1
+      ? 'Add a time option'
+      : 'Edit time option';
 
   return (
     <>
       <BottomSheet visible={isCreateSheetOpen} onClose={closeCreateSheet}>
-        <ScrollView style={sheetStyles.scroll} contentContainerStyle={sheetStyles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={sheetStyles.scroll}
+          contentContainerStyle={sheetStyles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={[sheetStyles.heading, { color: colors.textPrimary }]}>New event</Text>
 
           {errorMsg && (
@@ -317,24 +433,24 @@ export function CreateEventSheet() {
           )}
 
           <SectionLabel label="LOCATION" colors={colors} />
-          <LocationInput
-            value={location}
-            onChange={setLocation}
-            colors={colors}
-          />
+          <LocationInput value={location} onChange={setLocation} colors={colors} />
 
           <SectionLabel label="TIMING" colors={colors} />
           <TimingToggle selected={type} onSelect={setType} />
 
           {type === 'planned' && (
-            <View style={sheetStyles.timeRow}>
-              <TouchableOpacity onPress={openPlannedDate} style={[sheetStyles.timeChip, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-                <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>{formatDateLabel(plannedDate)}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={openPlannedTime} style={[sheetStyles.timeChip, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-                <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>{formatTimeLabel(plannedDate)}</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={() => setPickerTarget('planned')}
+              style={[sheetStyles.timeRow, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+            >
+              <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>
+                {formatDateLabel(plannedDate)}
+              </Text>
+              <Text style={[sheetStyles.timeChipDot, { color: colors.textSecondary }]}>·</Text>
+              <Text style={[sheetStyles.timeChipText, { color: colors.textPrimary }]}>
+                {formatTimeLabel(plannedDate)}
+              </Text>
+            </TouchableOpacity>
           )}
 
           {type === 'voting' && (
@@ -343,8 +459,11 @@ export function CreateEventSheet() {
                 Add times for people to vote on. Attendees can also suggest new times.
               </Text>
               {voteSlots.map((slot, i) => (
-                <View key={i} style={[sheetStyles.slotRow, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-                  <TouchableOpacity style={sheetStyles.slotLabel} onPress={() => editVoteSlot(i)}>
+                <View
+                  key={i}
+                  style={[sheetStyles.slotRow, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                >
+                  <TouchableOpacity style={sheetStyles.slotLabel} onPress={() => setPickerTarget(i)}>
                     <Text style={[sheetStyles.slotDay, { color: colors.textPrimary }]}>{formatDateLabel(slot)}</Text>
                     <Text style={[sheetStyles.slotTime, { color: colors.textSecondary }]}>{formatTimeLabel(slot)}</Text>
                   </TouchableOpacity>
@@ -354,12 +473,17 @@ export function CreateEventSheet() {
                 </View>
               ))}
               {voteSlots.length < 4 && (
-                <TouchableOpacity onPress={openNewSlot} style={[sheetStyles.addSlotBtn, { borderColor: colors.border }]}>
+                <TouchableOpacity
+                  onPress={() => setPickerTarget(-1)}
+                  style={[sheetStyles.addSlotBtn, { borderColor: colors.border }]}
+                >
                   <Text style={[sheetStyles.addSlotText, { color: colors.accent }]}>+ Add a time option</Text>
                 </TouchableOpacity>
               )}
-              {voteSlots.length > 0 && voteSlots.length < 2 && (
-                <Text style={[sheetStyles.votingHint, { color: colors.error }]}>Add at least 2 times to send.</Text>
+              {voteSlots.length === 1 && (
+                <Text style={[sheetStyles.votingHint, { color: colors.error }]}>
+                  Add at least 2 times to send.
+                </Text>
               )}
             </View>
           )}
@@ -395,15 +519,21 @@ export function CreateEventSheet() {
         </View>
       </BottomSheet>
 
-      <TimePickerModal
-        visible={pickerStep !== null}
-        step={pickerStep}
-        date={pickerDate}
-        onSelectDate={handlePickerDate}
-        onSelectTime={handlePickerTime}
-        onClose={() => setPickerStep(null)}
-        colors={colors}
-      />
+      {/* Compact date+time picker */}
+      <Modal visible={pickerTarget !== null} animationType="slide" transparent>
+        <View style={sheetStyles.modalOverlay}>
+          {pickerTarget !== null && (
+            <CompactTimePicker
+              key={String(pickerTarget)}
+              initialDate={pickerInitialDate}
+              title={pickerTitle}
+              colors={colors}
+              onCancel={() => setPickerTarget(null)}
+              onSelect={handlePickerSelect}
+            />
+          )}
+        </View>
+      </Modal>
     </>
   );
 }
@@ -411,14 +541,33 @@ export function CreateEventSheet() {
 const sheetStyles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: Spacing['5'], paddingBottom: Spacing['4'], gap: Spacing['3'] },
-  heading: { fontFamily: FontFamily.serifDisplay, fontSize: FontSize['2xl'], marginBottom: Spacing['2'], marginTop: Spacing['2'] },
+  heading: {
+    fontFamily: FontFamily.serifDisplay,
+    fontSize: FontSize['2xl'],
+    marginBottom: Spacing['2'],
+    marginTop: Spacing['2'],
+  },
   sectionLabel: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.xs, letterSpacing: 0.8, marginTop: Spacing['2'] },
-  input: { borderRadius: Radius.md, paddingHorizontal: Spacing['4'], paddingVertical: Spacing['3'], fontFamily: FontFamily.sans, fontSize: FontSize.base },
+  input: {
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['4'],
+    paddingVertical: Spacing['3'],
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.base,
+  },
   noteInput: { minHeight: 80, textAlignVertical: 'top' },
   inviteCount: { fontFamily: FontFamily.sans, fontSize: FontSize.sm, marginTop: -Spacing['1'] },
-  timeRow: { flexDirection: 'row', gap: Spacing['3'] },
-  timeChip: { flex: 1, paddingVertical: Spacing['3'], paddingHorizontal: Spacing['4'], borderRadius: Radius.md, borderWidth: 1, alignItems: 'center' },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing['2'],
+    paddingVertical: Spacing['3'],
+    paddingHorizontal: Spacing['4'],
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
   timeChipText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
+  timeChipDot: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
   votingSection: { gap: Spacing['2'] },
   votingHint: { fontFamily: FontFamily.sans, fontSize: FontSize.sm, lineHeight: FontSize.sm * 1.4 },
   slotRow: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.md, borderWidth: 1 },
@@ -427,11 +576,29 @@ const sheetStyles = StyleSheet.create({
   slotTime: { fontFamily: FontFamily.sans, fontSize: FontSize.sm, marginTop: 2 },
   slotRemove: { padding: Spacing['3'] },
   slotRemoveText: { fontSize: FontSize.base },
-  addSlotBtn: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: Radius.md, paddingVertical: Spacing['3'], alignItems: 'center' },
+  addSlotBtn: {
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing['3'],
+    alignItems: 'center',
+  },
   addSlotText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
-  errorBox: { borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing['4'], paddingVertical: Spacing['3'], backgroundColor: '#fef2f2', borderColor: '#fca5a5' },
+  errorBox: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['4'],
+    paddingVertical: Spacing['3'],
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+  },
   errorText: { fontFamily: FontFamily.sans, fontSize: FontSize.sm, color: '#dc2626' },
   footer: { paddingHorizontal: Spacing['5'], paddingTop: Spacing['4'], borderTopWidth: 1 },
   submitBtn: { borderRadius: Radius.lg, paddingVertical: Spacing['4'], alignItems: 'center' },
   submitText: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.md },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
 });

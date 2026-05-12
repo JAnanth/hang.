@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import { useColorScheme } from 'react-native';
 import { LightColors, DarkColors } from '../../constants/colors';
 import { FontFamily, FontSize, Spacing, Radius } from '../../constants/typography';
@@ -14,34 +21,191 @@ interface TimeVotingProps {
   isLoading?: boolean;
 }
 
-function buildTimeSlots(): Date[] {
-  const slots: Date[] = [];
-  const now = new Date();
-  for (let day = 0; day < 14; day++) {
-    for (let halfHour = 0; halfHour < 48; halfHour++) {
-      const d = new Date(now);
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() + day);
-      d.setMinutes(halfHour * 30);
-      if (d > now) slots.push(d);
-    }
+// ── Date/Time Picker ──────────────────────────────────────────────
+
+function buildDays(): Date[] {
+  const days: Date[] = [];
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + i);
+    days.push(d);
   }
-  return slots;
+  return days;
 }
 
-function formatSlot(d: Date): string {
+const DAYS = buildDays();
+const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const MINUTES = [0, 15, 30, 45];
+
+function dayLabel(d: Date): { top: string; bottom: string } {
   const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const isTomorrow =
-    d.toDateString() === new Date(now.getTime() + 86400000).toDateString();
-  const dayLabel = isToday
-    ? 'Today'
-    : isTomorrow
-    ? 'Tomorrow'
-    : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `${dayLabel} · ${time}`;
+  now.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - now.getTime()) / 86400000);
+  if (diff === 0) return { top: 'Today', bottom: '' };
+  if (diff === 1) return { top: 'Tomorrow', bottom: '' };
+  return {
+    top: d.toLocaleDateString('en-US', { weekday: 'short' }),
+    bottom: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  };
 }
+
+function buildIso(day: Date, hour: number, minute: number, ampm: 'AM' | 'PM'): string {
+  const d = new Date(day);
+  let h = hour % 12;
+  if (ampm === 'PM') h += 12;
+  d.setHours(h, minute, 0, 0);
+  return d.toISOString();
+}
+
+interface PickerProps {
+  onSelect: (iso: string) => void;
+  onCancel: () => void;
+  colors: ReturnType<typeof getDarkColors>;
+}
+
+function getDarkColors() {
+  return DarkColors;
+}
+
+function TimePicker({ onSelect, onCancel, colors }: PickerProps) {
+  const [selDay, setSelDay] = useState<Date>(DAYS[0]);
+  const [selHour, setSelHour] = useState<number>(6); // 6 PM default
+  const [selMinute, setSelMinute] = useState<number>(0);
+  const [ampm, setAmpm] = useState<'AM' | 'PM'>('PM');
+
+  const canConfirm = (() => {
+    const iso = buildIso(selDay, selHour, selMinute, ampm);
+    return new Date(iso) > new Date();
+  })();
+
+  return (
+    <View style={[pickerStyles.sheet, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[pickerStyles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={onCancel}>
+          <Text style={[pickerStyles.headerAction, { color: colors.textSecondary }]}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={[pickerStyles.headerTitle, { color: colors.textPrimary }]}>Suggest a time</Text>
+        <TouchableOpacity
+          onPress={() => canConfirm && onSelect(buildIso(selDay, selHour, selMinute, ampm))}
+          disabled={!canConfirm}
+        >
+          <Text
+            style={[
+              pickerStyles.headerAction,
+              { color: canConfirm ? colors.accent : colors.border },
+              { fontFamily: FontFamily.sansSemiBold },
+            ]}
+          >
+            Add
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Day row */}
+      <Text style={[pickerStyles.sectionLabel, { color: colors.textSecondary }]}>DATE</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={pickerStyles.dayRow}>
+        {DAYS.map((d) => {
+          const label = dayLabel(d);
+          const selected = d.toDateString() === selDay.toDateString();
+          return (
+            <TouchableOpacity
+              key={d.toISOString()}
+              onPress={() => setSelDay(d)}
+              style={[
+                pickerStyles.dayChip,
+                { borderColor: selected ? colors.accent : colors.border },
+                selected && { backgroundColor: `${colors.accent}18` },
+              ]}
+            >
+              <Text style={[pickerStyles.dayTop, { color: selected ? colors.accent : colors.textPrimary }]}>
+                {label.top}
+              </Text>
+              {label.bottom ? (
+                <Text style={[pickerStyles.dayBottom, { color: selected ? colors.accent : colors.textSecondary }]}>
+                  {label.bottom}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Hour grid */}
+      <Text style={[pickerStyles.sectionLabel, { color: colors.textSecondary }]}>HOUR</Text>
+      <View style={pickerStyles.hourGrid}>
+        {HOURS.map((h) => {
+          const selected = h === selHour;
+          return (
+            <TouchableOpacity
+              key={h}
+              onPress={() => setSelHour(h)}
+              style={[
+                pickerStyles.hourCell,
+                { borderColor: selected ? colors.accent : colors.border },
+                selected && { backgroundColor: `${colors.accent}18` },
+              ]}
+            >
+              <Text style={[pickerStyles.hourText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                {h}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Minute + AM/PM row */}
+      <View style={pickerStyles.minuteRow}>
+        <View style={pickerStyles.minuteGroup}>
+          {MINUTES.map((m) => {
+            const selected = m === selMinute;
+            return (
+              <TouchableOpacity
+                key={m}
+                onPress={() => setSelMinute(m)}
+                style={[
+                  pickerStyles.minuteChip,
+                  { borderColor: selected ? colors.accent : colors.border },
+                  selected && { backgroundColor: `${colors.accent}18` },
+                ]}
+              >
+                <Text style={[pickerStyles.minuteText, { color: selected ? colors.accent : colors.textPrimary }]}>
+                  :{String(m).padStart(2, '0')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={[pickerStyles.ampmToggle, { borderColor: colors.border }]}>
+          {(['AM', 'PM'] as const).map((a) => (
+            <TouchableOpacity
+              key={a}
+              onPress={() => setAmpm(a)}
+              style={[
+                pickerStyles.ampmBtn,
+                ampm === a && { backgroundColor: colors.accent },
+              ]}
+            >
+              <Text
+                style={[
+                  pickerStyles.ampmText,
+                  { color: ampm === a ? '#fff' : colors.textSecondary },
+                ]}
+              >
+                {a}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────
 
 export function TimeVoting({
   options,
@@ -54,7 +218,6 @@ export function TimeVoting({
   const scheme = useColorScheme();
   const colors = scheme === 'dark' ? DarkColors : LightColors;
   const [pickerVisible, setPickerVisible] = useState(false);
-  const slots = buildTimeSlots();
 
   const maxVotes = Math.max(...options.map((o) => o.voteCount), 1);
 
@@ -89,11 +252,7 @@ export function TimeVoting({
             <View style={styles.optionContent}>
               <View>
                 <Text style={[styles.dayLabel, { color: colors.textPrimary }]}>
-                  {date.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                  {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </Text>
                 <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
                   {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -134,39 +293,21 @@ export function TimeVoting({
 
       <Modal visible={pickerVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                Suggest a time
-              </Text>
-              <TouchableOpacity onPress={() => setPickerVisible(false)}>
-                <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={slots}
-              keyExtractor={(item) => item.toISOString()}
-              initialNumToRender={20}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    onSuggestTime(item.toISOString());
-                    setPickerVisible(false);
-                  }}
-                  style={[styles.slotRow, { borderBottomColor: colors.border }]}
-                >
-                  <Text style={[styles.slotText, { color: colors.textPrimary }]}>
-                    {formatSlot(item)}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+          <TimePicker
+            colors={colors}
+            onCancel={() => setPickerVisible(false)}
+            onSelect={(iso) => {
+              onSuggestTime?.(iso);
+              setPickerVisible(false);
+            }}
+          />
         </View>
       </Modal>
     </View>
   );
 }
+
+// ── Styles ─────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { gap: Spacing['2'] },
@@ -182,12 +323,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  progressBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-  },
+  progressBar: { position: 'absolute', top: 0, left: 0, bottom: 0 },
   optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,11 +342,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     alignItems: 'center',
   },
-  confirmText: {
-    fontFamily: FontFamily.sansSemiBold,
-    fontSize: FontSize.sm,
-    color: '#ffffff',
-  },
+  confirmText: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.sm, color: '#ffffff' },
   suggestBtn: {
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -224,25 +356,88 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modalSheet: {
+});
+
+const pickerStyles = StyleSheet.create({
+  sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '75%',
+    paddingBottom: 36,
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing['5'],
     paddingVertical: Spacing['4'],
-    borderBottomWidth: 1,
-  },
-  modalTitle: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
-  cancelText: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
-  slotRow: {
-    paddingHorizontal: Spacing['5'],
-    paddingVertical: Spacing['4'],
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  slotText: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
+  headerTitle: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
+  headerAction: { fontFamily: FontFamily.sans, fontSize: FontSize.base },
+  sectionLabel: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: FontSize.xs,
+    letterSpacing: 0.8,
+    marginTop: Spacing['4'],
+    marginBottom: Spacing['2'],
+    paddingHorizontal: Spacing['5'],
+  },
+  dayRow: {
+    paddingHorizontal: Spacing['5'],
+    gap: Spacing['2'],
+  },
+  dayChip: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['3'],
+    paddingVertical: Spacing['2'],
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  dayTop: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.sm },
+  dayBottom: { fontFamily: FontFamily.sans, fontSize: FontSize.xs, marginTop: 2 },
+  hourGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing['5'],
+    gap: Spacing['2'],
+  },
+  hourCell: {
+    width: '21%',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing['2'],
+    alignItems: 'center',
+  },
+  hourText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
+  minuteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing['5'],
+    marginTop: Spacing['4'],
+    gap: Spacing['3'],
+  },
+  minuteGroup: {
+    flexDirection: 'row',
+    gap: Spacing['2'],
+  },
+  minuteChip: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing['3'],
+    paddingVertical: Spacing['2'],
+  },
+  minuteText: { fontFamily: FontFamily.sansMedium, fontSize: FontSize.base },
+  ampmToggle: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+  },
+  ampmBtn: {
+    paddingHorizontal: Spacing['4'],
+    paddingVertical: Spacing['2'],
+  },
+  ampmText: { fontFamily: FontFamily.sansSemiBold, fontSize: FontSize.base },
 });

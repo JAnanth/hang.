@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth';
 import prisma from '../lib/prisma';
 import { createEvent, formatEventWithDetails } from '../services/eventService';
 import { notifyNewRsvp, notifyTimeConfirmed } from '../services/pushService';
-import { scheduleEventReminder, cancelEventReminder } from '../jobs/reminderJob';
+import { scheduleEventReminder, cancelEventReminder, scheduleEventAutoClose } from '../jobs/reminderJob';
 import { isGroupMember } from '../services/groupService';
 
 const createEventSchema = z.object({
@@ -48,28 +48,30 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
       const groupIds = userGroups.map((g) => g.groupId);
       const filteredGroupIds = groupId ? [groupId] : groupIds;
 
+      const now = new Date();
+      const quickCutoff = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+
+      const feedWhere = {
+        deletedAt: null,
+        status: { notIn: ['cancelled', 'ended'] },
+        eventGroups: { some: { groupId: { in: filteredGroupIds } } },
+        // Exclude past planned/voting events (the auto-close job handles DB update,
+        // but this ensures the feed is clean even before the job fires)
+        NOT: [
+          { confirmedTime: { lt: now } },
+          // Quick events expire after 4 hours if not manually ended
+          { AND: [{ type: 'quick' }, { createdAt: { lt: quickCutoff } }] },
+        ],
+      } as const;
+
       const [events, total] = await Promise.all([
         prisma.event.findMany({
-          where: {
-            deletedAt: null,
-            status: { not: 'cancelled' },
-            eventGroups: {
-              some: { groupId: { in: filteredGroupIds } },
-            },
-          },
+          where: feedWhere,
           orderBy: { createdAt: 'desc' },
           skip,
           take: size,
         }),
-        prisma.event.count({
-          where: {
-            deletedAt: null,
-            status: { not: 'cancelled' },
-            eventGroups: {
-              some: { groupId: { in: filteredGroupIds } },
-            },
-          },
-        }),
+        prisma.event.count({ where: feedWhere }),
       ]);
 
       const detailedEvents = await Promise.all(
@@ -179,6 +181,9 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
         await cancelEventReminder(id).catch(() => null);
         await scheduleEventReminder(id, new Date(confirmedTime)).catch((err) =>
           console.error('Failed to schedule reminder:', err)
+        );
+        await scheduleEventAutoClose(id, new Date(confirmedTime)).catch((err) =>
+          console.error('Failed to schedule auto-close:', err)
         );
       }
 
@@ -541,6 +546,9 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
 
       await scheduleEventReminder(id, option.proposedTime).catch((err) =>
         console.error('Failed to schedule reminder:', err)
+      );
+      await scheduleEventAutoClose(id, option.proposedTime).catch((err) =>
+        console.error('Failed to schedule auto-close:', err)
       );
 
       const groupName = event.eventGroups[0]?.group.name ?? 'group';
