@@ -15,7 +15,7 @@ const createEventSchema = z.object({
   groupIds: z.array(z.string().uuid()).min(1),
   friendsOnly: z.boolean().optional(),
   confirmedTime: z.string().datetime().optional(),
-  timeOptions: z.array(z.string().datetime()).min(2).max(4).optional(),
+  timeOptions: z.array(z.string().datetime()).min(1).max(4).optional(),
 });
 
 const updateEventSchema = z.object({
@@ -423,6 +423,55 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
 
       await prisma.eventComment.update({ where: { id: cid }, data: { deletedAt: new Date() } });
       return reply.status(204).send();
+    },
+  });
+
+  app.post('/:id/time-options', {
+    preHandler: [authenticate],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { proposedTime } = request.body as { proposedTime: string };
+
+      if (!proposedTime || isNaN(Date.parse(proposedTime))) {
+        return reply.status(400).send({ error: 'BadRequest', message: 'proposedTime must be a valid ISO datetime', statusCode: 400 });
+      }
+
+      const event = await prisma.event.findUnique({
+        where: { id, deletedAt: null },
+        include: { eventGroups: true },
+      });
+
+      if (!event) {
+        return reply.status(404).send({ error: 'NotFound', message: 'Event not found', statusCode: 404 });
+      }
+
+      if (event.type !== 'voting' || event.status !== 'active') {
+        return reply.status(400).send({ error: 'BadRequest', message: 'Can only add times to an active voting event', statusCode: 400 });
+      }
+
+      const isMember = await isGroupMember(event.eventGroups[0]?.groupId ?? '', request.user.id);
+      if (!isMember) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Not a member of this event\'s group', statusCode: 403 });
+      }
+
+      const currentCount = await prisma.eventTimeOption.count({ where: { eventId: id } });
+      if (currentCount >= 8) {
+        return reply.status(400).send({ error: 'BadRequest', message: 'Maximum 8 time options allowed', statusCode: 400 });
+      }
+
+      const option = await prisma.eventTimeOption.create({
+        data: { eventId: id, proposedTime: new Date(proposedTime), voteCount: 0 },
+      });
+
+      return reply.status(201).send({
+        data: {
+          id: option.id,
+          eventId: option.eventId,
+          proposedTime: option.proposedTime.toISOString(),
+          voteCount: 0,
+          hasVoted: false,
+        },
+      });
     },
   });
 
