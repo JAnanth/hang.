@@ -5,6 +5,12 @@
 
 ---
 
+## Demo
+
+[![hang. demo video](https://img.youtube.com/vi/mYYbgaMDSsA/maxresdefault.jpg)](https://youtu.be/mYYbgaMDSsA)
+
+---
+
 ## What is hang.?
 
 hang. is a spontaneous event coordination app built for college campuses. Post a hangout plan in under 30 seconds, broadcast it to your groups (dorm floor, Greek org, club team), collect RSVPs, and get a clean headcount. No group chat noise. No Eventbrite overkill.
